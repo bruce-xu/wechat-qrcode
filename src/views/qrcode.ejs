@@ -1,0 +1,137 @@
+<html>
+  <head>
+    <script>
+      const projects = JSON.parse('<%- JSON.stringify(projects) %>');
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('form');
+        const submit = document.getElementById('submit');
+        const login = document.getElementById('login');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+        const img = document.getElementById('qrcode');
+        const project = document.getElementById('project');
+        const branch = document.getElementById('branch');
+
+        function updateBranch(data) {
+          const branches = data.branches || [];
+          const options = []
+
+          for (let i = 0; i < branches.length; i++) {
+            options.push(`<option value="${branches[i].name}">${branches[i].func}</option>`);
+          }
+
+          branch.innerHTML = options.join('');
+        }
+
+        function clear() {
+          loading.style.display = 'none';
+          message.innerHTML = '';
+          img.src = '';
+        }
+
+        function onLogin() {
+          loading.style.display = 'inline-block';
+
+          fetch('/login', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              loading.style.display = 'none';
+
+              if (data.code === 0) {
+                img.src = data.data;
+                login.style.display = 'none';
+                form.style.display = 'block';
+              } else {
+                message.innerHTML = data.message;
+              }
+            });
+        }
+
+        function onChangeProject(event) {
+          const project = event.target.value;
+
+          updateBranch(projects[project]);
+          clear();
+        }
+
+        function onChangeBranch() {
+          clear();
+        }
+
+        function onSubmit(event) {
+          event.preventDefault();
+
+          loading.style.display = 'inline-block';
+          message.innerHTML = '';
+          img.src = '';
+
+          fetch('/qrcode', {
+            method: 'POST',
+            body: JSON.stringify({
+              project: project.value,
+              branch: branch.value
+            }),
+            headers: {
+              'content-type': 'application/json'
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              loading.style.display = 'none';
+
+              if (data.code === 0) {
+                img.src = `${data.data}?_=${Date.now()}`;
+              } else {
+                message.innerHTML = data.message;
+
+                if (data.code === 401) {
+                  location.replace('/login');
+                }
+              }
+            })
+            .catch(() => {
+              loading.style.display = 'none';
+              message.innerHTML = '请求失败，请重试';
+            });
+        }
+
+        (function init() {
+          submit.addEventListener('click', onSubmit);
+          login.addEventListener('click', onLogin);
+          project.addEventListener('change', onChangeProject);
+          branch.addEventListener('change', onChangeBranch);
+
+          updateBranch( projects[project.value]);
+        })();
+      });
+    </script>
+    <style>
+      body { text-align: center; padding-top: 50px }
+      #message { margin: 20px; color: red; }
+      #login { display: none; }
+    </style>
+  </head>
+  <body>
+    <div id="message"></div>
+    <button id="login">登录</button>
+    <form id="form">
+      <select id="project">
+        <% for (let key in projects) {%>
+          <option value="<%= projects[key].name %>"><%= projects[key].desc %></option>
+        <%}%>
+      </select>
+      <select id="branch"></select>
+      <button id="submit">生成预览二维码</button>
+    </form>
+    <div>
+      <img id="loading" src="/loading.gif" style="display: none;" />
+      <img id="qrcode" />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+<html>
+  <head>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const login = document.getElementById('login');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+        const img = document.getElementById('qrcode');
+
+        login.addEventListener('click', onLogin);
+
+        function onLogin() {
+          loading.style.display = 'inline-block';
+
+          fetch('/login', {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json'
+            }
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              loading.style.display = 'none';
+
+              if (data.code === 0) {
+                img.src = data.data;
+              } else {
+                message.innerHTML = data.message;
+              }
+            });
+        }
+      });
+    </script>
+    <style>
+      body { text-align: center; padding-top: 50px }
+      #message { margin: 20px; color: red; }
+    </style>
+  </head>
+  <body>
+    <div id="message">您还未登录，请点击 “生成登录二维码” 按钮，然后使用有项目开发权限的微信用户扫描登录二维码登录。登录成功后，请点击 “已扫码登录” 链接</div>
+    <button id="login">生成登录二维码</button>
+    <a href="/qrcode">已扫码登录</a>
+    <div>
+      <img id="loading" src="/loading.gif" style="display: none;" />
+      <img id="qrcode" />
+    </div>
+  </body>
+</html>
