@@ -13,6 +13,15 @@ async function resetCode(projectPath) {
   }
 }
 
+async function fetchCode(projectPath, branch) {
+  try {
+    await execute(`git fetch origin ${branch}`, { cwd: projectPath });
+  } catch (error) {
+    error.name = '拉取分支代码';
+    throw error;
+  }
+}
+
 async function checkoutBranch(projectPath, branch) {
   try {
     await execute(`git checkout ${branch}`, { cwd: projectPath });
@@ -56,6 +65,8 @@ async function qrcode(project, branch) {
   try {
     // 取消代码修改
     await resetCode(projectPath);
+    // 拉取分支代码（用于新建分支，本地还不存在时，否则无法切换过去）
+    await fetchCode(projectPath, branch);
     // 切换代码分支
     await checkoutBranch(projectPath, branch);
     // 更新代码
